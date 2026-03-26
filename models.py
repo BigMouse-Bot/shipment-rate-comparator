@@ -1,7 +1,8 @@
-# models.py
+"""Data models for shipment rate comparator"""
+
 from dataclasses import dataclass, field
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 
 class ServiceLevel(Enum):
@@ -12,43 +13,45 @@ class ServiceLevel(Enum):
     THREE_DAY = "3 Day"
     GROUND = "Ground"
     ECONOMY = "Economy"
+    EXPRESS = "Express"
+    STANDARD = "Standard"
 
 class Carrier(Enum):
     """Supported carriers"""
     FEDEX = "FedEx"
     UPS = "UPS"
     USPS = "USPS"
+    # Indian carriers
+    DTDC = "DTDC"
+    BLUEDART = "Blue Dart"
+    DELHIVERY = "Delhivery"
+    INDIA_POST = "India Post"
 
 @dataclass
 class ShipmentPackage:
     """Represents a package to be shipped"""
-    weight_lbs: float
-    length_in: float
-    width_in: float
-    height_in: float
-    origin_zip: str
-    destination_zip: str
+    weight_kg: float  # Changed from lbs to kg for India
+    length_cm: float  # Changed from inches to cm
+    width_cm: float
+    height_cm: float
+    origin_pincode: str  # Indian pincode (6 digits)
+    destination_pincode: str
     declared_value: Optional[float] = None
     is_residential: bool = True
     
     def __post_init__(self):
         """Validate package data"""
-        if self.weight_lbs <= 0:
+        if self.weight_kg <= 0:
             raise ValueError("Weight must be positive")
-        if self.length_in <= 0 or self.width_in <= 0 or self.height_in <= 0:
+        if self.length_cm <= 0 or self.width_cm <= 0 or self.height_cm <= 0:
             raise ValueError("Dimensions must be positive")
-        if len(self.origin_zip) < 5 or len(self.destination_zip) < 5:
-            raise ValueError("ZIP codes must be at least 5 characters")
+        if len(self.origin_pincode) < 6 or len(self.destination_pincode) < 6:
+            raise ValueError("Indian pincodes must be 6 digits")
     
     @property
-    def volume_cubic_inches(self) -> float:
-        """Calculate package volume"""
-        return self.length_in * self.width_in * self.height_in
-    
-    @property
-    def dimensional_weight(self) -> float:
-        """Calculate DIM weight (standard divisor 166)"""
-        return self.volume_cubic_inches / 166.0
+    def volume_cubic_cm(self) -> float:
+        """Calculate package volume in cubic cm"""
+        return self.length_cm * self.width_cm * self.height_cm
 
 @dataclass
 class ShippingRate:
@@ -56,7 +59,7 @@ class ShippingRate:
     carrier: Carrier
     service_name: str
     service_level: ServiceLevel
-    price: float
+    price_inr: float  # Changed from price to price_inr
     delivery_days: int
     estimated_delivery_date: Optional[str] = None
     tracking_included: bool = True
@@ -65,16 +68,16 @@ class ShippingRate:
     
     def __post_init__(self):
         """Ensure price is float"""
-        self.price = float(self.price)
+        self.price_inr = float(self.price_inr)
     
     @property
     def formatted_price(self) -> str:
-        """Return formatted price"""
-        return f"${self.price:.2f}"
+        """Return formatted price in INR"""
+        return f"₹{self.price_inr:.2f}"
     
     def __lt__(self, other):
         """Compare by price for sorting"""
-        return self.price < other.price
+        return self.price_inr < other.price_inr
 
 @dataclass
 class ComparisonResult:
@@ -88,7 +91,7 @@ class ComparisonResult:
         """Get cheapest rate"""
         if not self.rates:
             return None
-        return min(self.rates, key=lambda x: x.price)
+        return min(self.rates, key=lambda x: x.price_inr)
     
     @property
     def fastest(self) -> Optional[ShippingRate]:
@@ -96,10 +99,3 @@ class ComparisonResult:
         if not self.rates:
             return None
         return min(self.rates, key=lambda x: x.delivery_days)
-    
-    @property
-    def best_value(self) -> Optional[ShippingRate]:
-        """Get best value (price per day)"""
-        if not self.rates:
-            return None
-        return min(self.rates, key=lambda x: x.price / x.delivery_days)

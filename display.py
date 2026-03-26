@@ -24,44 +24,43 @@ class DisplayManager:
     
     @staticmethod
     def print_package_details(package) -> None:
-        """Print package details"""
+        """Print package details in metric units"""
         print(f"\n{Fore.GREEN}📦 Package Details:{Style.RESET_ALL}")
-        print(f"   Weight: {package.weight_lbs} lbs")
-        print(f"   Dimensions: {package.length_in} × {package.width_in} × {package.height_in} in")
-        print(f"   Volume: {package.volume_cubic_inches:.0f} cu in")
-        print(f"   From: {package.origin_zip}")
-        print(f"   To: {package.destination_zip}")
+        print(f"   Weight: {package.weight_kg} kg")
+        print(f"   Dimensions: {package.length_cm} × {package.width_cm} × {package.height_cm} cm")
+        print(f"   Volume: {package.volume_cubic_cm:.0f} cu cm")
+        print(f"   From Pincode: {package.origin_pincode}")
+        print(f"   To Pincode: {package.destination_pincode}")
         if package.declared_value:
-            print(f"   Declared Value: ${package.declared_value:.2f}")
+            print(f"   Declared Value: ₹{package.declared_value:.2f}")
     
     @staticmethod
     def print_best_offers(best: Dict) -> None:
-        """Print best offers"""
+        """Print best offers with INR pricing"""
         
         if best['cheapest']:
             print(f"\n{Fore.GREEN}💰 CHEAPEST OPTION:{Style.RESET_ALL}")
             c = best['cheapest']
             print(f"   {Fore.WHITE}{c['carrier']} - {c['service']}{Style.RESET_ALL}")
-            print(f"   {Fore.GREEN}Price: ${c['price']:.2f}{Style.RESET_ALL}")
+            print(f"   {Fore.GREEN}Price: ₹{c['price']:.2f}{Style.RESET_ALL}")
             print(f"   Delivery: {c['delivery_days']} business days")
         
         if best['fastest'] and best['fastest'] != best['cheapest']:
             print(f"\n{Fore.CYAN}⚡ FASTEST OPTION:{Style.RESET_ALL}")
             f = best['fastest']
             print(f"   {Fore.WHITE}{f['carrier']} - {f['service']}{Style.RESET_ALL}")
-            print(f"   Price: ${f['price']:.2f}")
+            print(f"   Price: ₹{f['price']:.2f}")
             print(f"   {Fore.CYAN}Delivery: {f['delivery_days']} business days{Style.RESET_ALL}")
         
         if best.get('best_value') and best['best_value'] != best['cheapest']:
             print(f"\n{Fore.MAGENTA}🎯 BEST VALUE (Price per Day):{Style.RESET_ALL}")
             v = best['best_value']
-            price_per_day = v['price'] / v['delivery_days']
             print(f"   {Fore.WHITE}{v['carrier']} - {v['service']}{Style.RESET_ALL}")
-            print(f"   ${v['price']:.2f} / {v['delivery_days']} days = ${price_per_day:.2f}/day")
+            print(f"   ₹{v['price']:.2f} / {v['delivery_days']} days = ₹{v['value_score']:.2f}/day")
     
     @staticmethod
     def print_all_quotes(quotes: List[Dict]) -> None:
-        """Print all quotes in a table"""
+        """Print all quotes in a table with INR"""
         if not quotes:
             return
         
@@ -80,11 +79,11 @@ class DisplayManager:
                 i,
                 f"{Fore.CYAN}{quote['carrier']}{Style.RESET_ALL}",
                 quote['service'][:35],
-                f"{price_color}${quote['price']:.2f}{Style.RESET_ALL}",
+                f"{price_color}₹{quote['price']:.2f}{Style.RESET_ALL}",
                 f"{quote['delivery_days']} days"
             ])
         
-        headers = ["#", "Carrier", "Service", "Price", "Delivery"]
+        headers = ["#", "Carrier", "Service", "Price (INR)", "Delivery"]
         print(tabulate(table_data, headers=headers, tablefmt="grid"))
     
     @staticmethod
@@ -101,8 +100,3 @@ class DisplayManager:
     def print_warning(message: str) -> None:
         """Print warning message"""
         print(f"\n{Fore.YELLOW}⚠️  WARNING: {message}{Style.RESET_ALL}")
-    
-    @staticmethod
-    def print_info(message: str) -> None:
-        """Print info message"""
-        print(f"\n{Fore.BLUE}ℹ️  {message}{Style.RESET_ALL}")

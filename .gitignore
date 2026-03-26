@@ -1,5 +1,42 @@
-venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Environment variables
 .env
-.mount,txt.swp
+apikey.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+debug.log
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# OS
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
