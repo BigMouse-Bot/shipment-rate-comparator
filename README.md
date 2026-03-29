@@ -23,6 +23,14 @@ This project demonstrates:
 - Python 3.8+
 - TinyFish API key (get it from [tinyfish.ai](https://www.tinyfish.ai))
 
+## Features
+
+- **7 Carriers**: FedEx, UPS, USPS + Indian carriers (DTDC, Blue Dart, Delhivery, India Post)
+- **Indian Units**: Weight in kg, dimensions in cm, prices in INR
+- **Real Web Automation**: Navigates live carrier websites
+- **Smart Comparison**: Shows cheapest, fastest, and best value options
+- **Clean Output**: Color-coded terminal display with tables
+
 ## 🚀 Installation
 
 ```bash

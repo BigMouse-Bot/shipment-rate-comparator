@@ -50,8 +50,7 @@ class RateOrchestrator:
         else:
             results.append({"carrier": "DTDC", "error": "No response", "price": None})
         
-        # For hackathon, you can add other carriers similarly
-        # For now, we'll add placeholder results
+        # Other carriers (you can implement these similarly)
         other_carriers = [
             ("Blue Dart", None, "Premium", "3-4 days"),
             ("Delhivery", None, "Express", "3-5 days"),

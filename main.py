@@ -1,121 +1,83 @@
-"""Main application for shipment rate comparator - India Edition"""
+#!/usr/bin/env python3
+"""
+Shipment Rate Comparator for Indian E-commerce
+Hackathon Submission
+"""
 
-import asyncio
-import sys
-from colorama import init, Fore, Style
-from typing import Optional
+import logging
+from agent_orchestrator import RateOrchestrator
 
-from config import Config
-from models import ShipmentPackage
-from orchestrator import ShippingRateOrchestrator
-from display import DisplayManager
-from utils.logger import setup_logger
+API_KEY = "sk-tinyfish-ItUBc-Vsr8i2Fcdy7Ww27FKr56QZNcwj"
 
-init(autoreset=True)
-
-class ShippingRateComparator:
-    """Main application class - India Edition"""
+def main():
+    print("\n" + "="*70)
+    print("             🚚 SHIPMENT RATE COMPARATOR - INDIA EDITION 🚚             ")
+    print("="*70)
     
-    def __init__(self):
-        self.logger = setup_logger("main")
-        self.display = DisplayManager()
-        self.orchestrator = ShippingRateOrchestrator()
+    # Get package details
+    print("\n📦 Enter package details:\n")
+    weight = float(input("   Weight (kg): "))
+    length = float(input("   Length (cm): "))
+    width = float(input("   Width (cm): "))
+    height = float(input("   Height (cm): "))
+    origin = input("   Origin Pincode (6 digits): ").strip()
+    dest = input("   Destination Pincode (6 digits): ").strip()
+    declared_value = input("   Declared value (optional, press Enter to skip): ").strip()
     
-    def get_user_input(self) -> Optional[ShipmentPackage]:
-        """Get shipment details from user - Metric units for India"""
-        self.display.print_header("🚚 SHIPMENT RATE COMPARATOR - INDIA EDITION 🚚")
+    # Display package summary
+    print(f"\n📦 Package Details:")
+    print(f"   Weight: {weight} kg")
+    print(f"   Dimensions: {length} × {width} × {height} cm")
+    print(f"   Volume: {length * width * height} cu cm")
+    print(f"   From Pincode: {origin}")
+    print(f"   To Pincode: {dest}")
+    
+    # Fetch rates
+    print("\n▶ Fetching Rates from Indian Carriers")
+    print("-" * 50)
+    print("   Comparing DTDC, Blue Dart, Delhivery, India Post...\n")
+    
+    orchestrator = RateOrchestrator(API_KEY)
+    results = orchestrator.compare_rates(weight, origin, dest)
+    
+    # Display results
+    print("\n" + "="*70)
+    print("                        📊 COMPARISON RESULTS 📊                        ")
+    print("="*70)
+    
+    # Sort by price (cheapest first)
+    valid_results = [r for r in results if r.get('price')]
+    valid_results.sort(key=lambda x: x.get('price', float('inf')))
+    
+    if valid_results:
+        print(f"\n{'Carrier':<15} {'Service':<15} {'Price':<15} {'Delivery':<15}")
+        print("-" * 60)
+        for r in valid_results:
+            price_str = r.get('price_display', 'N/A')
+            print(f"{r['carrier']:<15} {r['service']:<15} {price_str:<15} {r['delivery_time']:<15}")
         
-        try:
-            print("\n📦 Enter package details:\n")
-            
-            # Weight in kg (not lbs)
-            weight = float(input("   Weight (kg): ").strip())
-            
-            # Dimensions in cm (not inches)
-            length = float(input("   Length (cm): ").strip())
-            width = float(input("   Width (cm): ").strip())
-            height = float(input("   Height (cm): ").strip())
-            
-            # Indian pincodes (6 digits)
-            origin = input("   Origin Pincode (6 digits): ").strip()
-            destination = input("   Destination Pincode (6 digits): ").strip()
-            
-            # Optional declared value in INR
-            declared_input = input("   Declared value (optional, press Enter to skip): ").strip()
-            declared_value = float(declared_input) if declared_input else None
-            
-            return ShipmentPackage(
-                weight_kg=weight,
-                length_cm=length,
-                width_cm=width,
-                height_cm=height,
-                origin_pincode=origin,
-                destination_pincode=destination,
-                declared_value=declared_value
-            )
-            
-        except KeyboardInterrupt:
-            self.display.print_warning("\nOperation cancelled")
-            return None
-        except ValueError as e:
-            self.display.print_error(f"Invalid input: {str(e)}")
-            return None
-        except Exception as e:
-            self.display.print_error(f"Error: {str(e)}")
-            return None
-    
-    async def run_comparison(self) -> None:
-        """Run the rate comparison"""
-        try:
-            # Get user input
-            package = self.get_user_input()
-            if not package:
-                return
-            
-            # Display package details
-            self.display.print_package_details(package)
-            
-            # Run comparison
-            self.display.print_subheader("Fetching Rates from Indian Carriers")
-            print("   Comparing DTDC, Blue Dart, Delhivery, India Post...\n")
-            
-            result = await self.orchestrator.compare_rates(package)
-            
-            # Find best options
-            best = self.orchestrator.find_best_rates(result)
-            
-            # Display results
-            self.display.print_header("📊 COMPARISON RESULTS 📊")
-            
-            if result.rates:
-                self.display.print_best_offers(best)
-                self.display.print_all_quotes(best['all_quotes'])
-                self.display.print_success(f"Found {len(result.rates)} shipping options")
-            else:
-                self.display.print_error("No rates could be retrieved")
-                self.display.print_warning("Please check your pincodes and try again")
-            
-        except Exception as e:
-            self.logger.error(f"Error: {str(e)}")
-            self.display.print_error(f"An error occurred: {str(e)}")
-
-async def main():
-    """Main entry point"""
-    comparator = ShippingRateComparator()
-    
-    while True:
-        await comparator.run_comparison()
+        # Show best option
+        best = valid_results[0]
+        print(f"\n🏆 BEST RATE: {best['carrier']} - {best['service']} at {best['price_display']}")
+        print(f"   Estimated delivery: {best['delivery_time']}")
         
-        # Ask if user wants to compare another shipment
-        print("\n" + "=" * 70)
-        again = input("🔄 Compare another shipment? (y/n): ").strip().lower()
-        if again != 'y':
-            print(f"\n{Fore.GREEN}Dhanyavaad! Thank you for using Shipment Rate Comparator!{Style.RESET_ALL}")
-            break
+        # Show DTDC options if available
+        dtdc_result = next((r for r in results if r['carrier'] == 'DTDC'), None)
+        if dtdc_result and dtdc_result.get('all_options'):
+            print(f"\n📦 DTDC Additional Options:")
+            for opt in dtdc_result['all_options']:
+                print(f"   • {opt.get('service', 'Service')}: ₹{opt.get('estimated_price', 'N/A')} - {opt.get('delivery_time', 'N/A')}")
+    else:
+        print("\n❌ ERROR: No rates could be retrieved")
+        print("\n⚠️  WARNING: Please check your pincodes and try again")
+    
+    print("\n" + "="*70)
+    choice = input("\n🔄 Compare another shipment? (y/n): ").lower()
+    if choice == 'y':
+        main()
+    else:
+        print("\nDhanyavaad! Thank you for using Shipment Rate Comparator!")
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}👋 Goodbye!{Style.RESET_ALL}")
-        sys.exit(0)
+    logging.basicConfig(level=logging.WARNING)  # Reduce verbosity
+    main()

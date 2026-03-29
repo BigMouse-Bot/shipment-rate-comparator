@@ -1,137 +1,139 @@
-"""Custom TinyFish API client with Indian carrier support"""
+#!/usr/bin/env python3
+"""
+TinyFish API Client for Shipment Rate Comparator
+"""
 
-import asyncio
-import aiohttp
 import json
-import random
-from typing import Optional, Dict, Any, List
-from config import Config
-from utils.logger import setup_logger
+import requests
+import logging
+from typing import Dict, Optional, Any
 
-logger = setup_logger("tinyfish_client")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TinyFishClient:
-    """TinyFish API client for web automation"""
-    
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = Config.TINYFISH_API_URL
-        self.session = None
-        self.mock_mode = True  # Set to True for development
-        self.logger = logger
-    
-    async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create HTTP session"""
-        if not self.session and not self.mock_mode:
-            self.session = aiohttp.ClientSession(
-                headers={
-                    'Authorization': f'Bearer {self.api_key}',
-                    'Content-Type': 'application/json'
-                }
-            )
-        return self.session
-    
-    async def create_agent(self, headless: bool = False, timeout: int = 30000) -> 'WebAgent':
-        """Create a new web agent"""
-        if self.mock_mode:
-            logger.info("MOCK MODE: Creating Indian carrier agent")
-            return WebAgent(f"indian_agent_{random.randint(1000, 9999)}", self)
+        self.base_url = "https://agent.tinyfish.ai"
         
-        # Real API code would go here
-        return WebAgent(f"agent_{random.randint(1000, 9999)}", self)
-    
-    async def close(self):
-        """Close HTTP session"""
-        if self.session:
-            await self.session.close()
-            logger.info("Client session closed")
-
-class WebAgent:
-    """Web agent for browser automation with Indian carrier support"""
-    
-    def __init__(self, agent_id: str, client: TinyFishClient):
-        self.agent_id = agent_id
-        self.client = client
-        self.current_url = ""
-        self.mock_mode = client.mock_mode
-        self.logger = logger
-        self.mock_data = {
-            'dtdc': [
-                {'service': 'DTDC Surface', 'price': 89, 'days': 5},
-                {'service': 'DTDC Air', 'price': 149, 'days': 2},
-                {'service': 'DTDC Express', 'price': 199, 'days': 1}
-            ],
-            'bluedart': [
-                {'service': 'Blue Dart Surface', 'price': 129, 'days': 4},
-                {'service': 'Blue Dart Air', 'price': 249, 'days': 2},
-                {'service': 'Blue Dart Priority', 'price': 399, 'days': 1}
-            ],
-            'delhivery': [
-                {'service': 'Delhivery Standard', 'price': 69, 'days': 5},
-                {'service': 'Delhivery Express', 'price': 119, 'days': 3},
-                {'service': 'Delhivery Priority', 'price': 179, 'days': 2}
-            ],
-            'indiapost': [
-                {'service': 'India Post Speed Post', 'price': 49, 'days': 4},
-                {'service': 'India Post Registered', 'price': 39, 'days': 6},
-                {'service': 'India Post Express', 'price': 89, 'days': 3}
-            ]
+    def scrape_rates(self, url: str, goal: str, timeout: int = 180) -> Optional[Dict]:
+        """Call TinyFish API to scrape shipping rates"""
+        
+        headers = {
+            "X-API-Key": self.api_key,
+            "Content-Type": "application/json",
         }
-    
-    async def goto(self, url: str):
-        """Navigate to URL"""
-        self.current_url = url
-        if self.mock_mode:
-            self.logger.info(f"MOCK: Navigating to {url}")
-            await asyncio.sleep(1)
-    
-    async def fill(self, selector: str, value: str):
-        """Fill form field"""
-        if self.mock_mode:
-            self.logger.debug(f"MOCK: Filling {selector} with {value}")
-            await asyncio.sleep(0.5)
-    
-    async def click(self, selector: str):
-        """Click element"""
-        if self.mock_mode:
-            self.logger.debug(f"MOCK: Clicking {selector}")
-            await asyncio.sleep(0.5)
-    
-    async def wait_for_selector(self, selector: str, timeout: int = 10000) -> bool:
-        """Wait for element to appear"""
-        if self.mock_mode:
-            await asyncio.sleep(1)
-            return True
-        return True
-    
-    async def evaluate(self, script: str) -> Any:
-        """Execute JavaScript and return mock rates"""
-        if self.mock_mode:
-            await asyncio.sleep(1)
+        
+        payload = {
+            "url": url,
+            "goal": goal,
+            "browser_profile": "stealth"
+        }
+        
+        try:
+            logger.info(f"Calling TinyFish API for {url}...")
             
-            # Return mock data based on URL
-            if 'dtdc' in self.current_url.lower():
-                return self.mock_data['dtdc']
-            elif 'bluedart' in self.current_url.lower():
-                return self.mock_data['bluedart']
-            elif 'delhivery' in self.current_url.lower():
-                return self.mock_data['delhivery']
-            elif 'indiapost' in self.current_url.lower():
-                return self.mock_data['indiapost']
-            else:
-                return [
-                    {'service': 'Standard Shipping', 'price': 59, 'days': 4},
-                    {'service': 'Express Shipping', 'price': 99, 'days': 2}
-                ]
-        return []
+            response = requests.post(
+                f"{self.base_url}/v1/automation/run-sse",
+                headers=headers,
+                json=payload,
+                stream=True,
+                timeout=timeout
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"HTTP {response.status_code}: {response.text}")
+                return None
+            
+            # Parse SSE stream
+            result_data = None
+            
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                    
+                line_str = line.decode('utf-8').strip()
+                if line_str.startswith('data: '):
+                    try:
+                        event = json.loads(line_str[6:])
+                        event_type = event.get('type')
+                        
+                        if event_type == 'PROGRESS':
+                            purpose = event.get('purpose', 'Working...')
+                            logger.info(f"🔍 {purpose}")
+                            
+                        elif event_type == 'COMPLETE':
+                            if event.get('status') == 'COMPLETED':
+                                result_data = event.get('result')
+                                logger.info("✅ API call completed successfully")
+                                break
+                            else:
+                                logger.error(f"❌ API failed: {event.get('status')}")
+                                return None
+                                
+                        elif event_type == 'ERROR':
+                            logger.error(f"❌ API error: {event.get('message', 'Unknown error')}")
+                            return None
+                            
+                    except json.JSONDecodeError:
+                        continue
+            
+            return result_data
+            
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout after {timeout} seconds")
+            return None
+        except Exception as e:
+            logger.error(f"Request failed: {str(e)}")
+            return None
+
+    def get_dtdc_rates(self, weight_kg: float, origin_pincode: str, dest_pincode: str) -> Optional[Dict]:
+        """Get DTDC shipping rates"""
+        goal = f"""
+        Find DTDC domestic e-commerce shipping rate for a {weight_kg}kg parcel.
+        Origin pincode: {origin_pincode}
+        Destination pincode: {dest_pincode}
+        
+        Use DTDC rate calculator or integrated tools like ClickPost to find exact rates.
+        Return JSON with:
+        - primary_service: {{"carrier_name":"DTDC","service":"service name","estimated_price":price in INR,"delivery_time":"X days","weight_kg":{weight_kg},"origin_pincode":"{origin_pincode}","destination_pincode":"{dest_pincode}"}}
+        - additional_options: list of other service options with estimated_price and delivery_time
+        """
+        
+        return self.scrape_rates("https://www.dtdc.in", goal)
     
-    async def is_element_present(self, selector: str, timeout: int = 5000) -> bool:
-        """Check if element exists"""
-        if self.mock_mode:
-            return True
-        return True
+    def get_bluedart_rates(self, weight_kg: float, origin_pincode: str, dest_pincode: str) -> Optional[Dict]:
+        """Get Blue Dart shipping rates"""
+        goal = f"""
+        Find Blue Dart domestic shipping rate for a {weight_kg}kg e-commerce parcel.
+        Origin: {origin_pincode}, Destination: {dest_pincode}
+        
+        Look for rate calculator or tariff section.
+        Return JSON with carrier_name, service, estimated_price in INR, delivery_time in days.
+        """
+        
+        return self.scrape_rates("https://www.bluedart.com", goal)
     
-    async def close(self):
-        """Close the agent"""
-        if self.mock_mode:
-            self.logger.info(f"MOCK: Closing agent {self.agent_id}")
+    def get_delhivery_rates(self, weight_kg: float, origin_pincode: str, dest_pincode: str) -> Optional[Dict]:
+        """Get Delhivery shipping rates"""
+        goal = f"""
+        Find Delhivery domestic shipping rate for a {weight_kg}kg parcel.
+        Origin pincode: {origin_pincode}
+        Destination pincode: {dest_pincode}
+        
+        Return JSON with carrier_name, service, estimated_price in INR, delivery_time in days.
+        """
+        
+        return self.scrape_rates("https://www.delhivery.com", goal)
+    
+    def get_indiapost_rates(self, weight_kg: float, origin_pincode: str, dest_pincode: str) -> Optional[Dict]:
+        """Get India Post Speed Post rates"""
+        goal = f"""
+        Find India Post Speed Post rate for a {weight_kg}kg domestic parcel.
+        Use official rate calculator or rate card.
+        
+        Return JSON with carrier_name: "India Post", service: "Speed Post", 
+        estimated_price in INR, delivery_time in days.
+        """
+        
+        return self.scrape_rates("https://www.indiapost.gov.in", goal)
