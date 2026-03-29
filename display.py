@@ -1,4 +1,4 @@
-"""Display manager for console output"""
+"""Display manager for console output - India Edition"""
 
 from tabulate import tabulate
 from colorama import Fore, Style, init

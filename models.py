@@ -1,4 +1,4 @@
-"""Data models for shipment rate comparator"""
+"""Data models for shipment rate comparator - India Edition"""
 
 from dataclasses import dataclass, field
 from typing import Optional, List
@@ -17,11 +17,7 @@ class ServiceLevel(Enum):
     STANDARD = "Standard"
 
 class Carrier(Enum):
-    """Supported carriers"""
-    FEDEX = "FedEx"
-    UPS = "UPS"
-    USPS = "USPS"
-    # Indian carriers
+    """Supported carriers - India focus"""
     DTDC = "DTDC"
     BLUEDART = "Blue Dart"
     DELHIVERY = "Delhivery"
@@ -30,11 +26,11 @@ class Carrier(Enum):
 @dataclass
 class ShipmentPackage:
     """Represents a package to be shipped"""
-    weight_kg: float  # Changed from lbs to kg for India
-    length_cm: float  # Changed from inches to cm
+    weight_kg: float
+    length_cm: float
     width_cm: float
     height_cm: float
-    origin_pincode: str  # Indian pincode (6 digits)
+    origin_pincode: str
     destination_pincode: str
     declared_value: Optional[float] = None
     is_residential: bool = True
@@ -45,7 +41,7 @@ class ShipmentPackage:
             raise ValueError("Weight must be positive")
         if self.length_cm <= 0 or self.width_cm <= 0 or self.height_cm <= 0:
             raise ValueError("Dimensions must be positive")
-        if len(self.origin_pincode) < 6 or len(self.destination_pincode) < 6:
+        if len(self.origin_pincode) != 6 or len(self.destination_pincode) != 6:
             raise ValueError("Indian pincodes must be 6 digits")
     
     @property
@@ -55,11 +51,11 @@ class ShipmentPackage:
 
 @dataclass
 class ShippingRate:
-    """Represents a shipping rate quote"""
+    """Represents a shipping rate quote in INR"""
     carrier: Carrier
     service_name: str
     service_level: ServiceLevel
-    price_inr: float  # Changed from price to price_inr
+    price_inr: float
     delivery_days: int
     estimated_delivery_date: Optional[str] = None
     tracking_included: bool = True

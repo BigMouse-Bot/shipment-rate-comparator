@@ -1,25 +1,19 @@
-"""Orchestrator for rate comparison"""
+"""Orchestrator for rate comparison - India Edition"""
 
 import asyncio
 from typing import List, Dict, Optional
 from models import ShipmentPackage, ShippingRate, ComparisonResult, Carrier
 from agents import (
-    FedExAgent, UPSAgent, USPSAgent,
     DTDCAgent, BlueDartAgent, DelhiveryAgent, IndiaPostAgent
 )
 from utils.logger import setup_logger
 
 class ShippingRateOrchestrator:
-    """Orchestrates rate comparison across multiple carriers"""
+    """Orchestrates rate comparison across Indian carriers"""
     
     def __init__(self):
         self.logger = setup_logger("orchestrator")
         self.agents = {
-            # International carriers
-            Carrier.FEDEX: FedExAgent(),
-            Carrier.UPS: UPSAgent(),
-            Carrier.USPS: USPSAgent(),
-            # Indian carriers
             Carrier.DTDC: DTDCAgent(),
             Carrier.BLUEDART: BlueDartAgent(),
             Carrier.DELHIVERY: DelhiveryAgent(),

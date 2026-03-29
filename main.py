@@ -1,4 +1,4 @@
-"""Main application for shipment rate comparator"""
+"""Main application for shipment rate comparator - India Edition"""
 
 import asyncio
 import sys
@@ -14,7 +14,7 @@ from utils.logger import setup_logger
 init(autoreset=True)
 
 class ShippingRateComparator:
-    """Main application class"""
+    """Main application class - India Edition"""
     
     def __init__(self):
         self.logger = setup_logger("main")
@@ -22,35 +22,35 @@ class ShippingRateComparator:
         self.orchestrator = ShippingRateOrchestrator()
     
     def get_user_input(self) -> Optional[ShipmentPackage]:
-        """Get shipment details from user"""
-        self.display.print_header("🚚 SHIPMENT RATE COMPARATOR 🚚")
+        """Get shipment details from user - Metric units for India"""
+        self.display.print_header("🚚 SHIPMENT RATE COMPARATOR - INDIA EDITION 🚚")
         
         try:
             print("\n📦 Enter package details:\n")
             
-            # Weight
-            weight = float(input("   Weight (lbs): ").strip())
+            # Weight in kg (not lbs)
+            weight = float(input("   Weight (kg): ").strip())
             
-            # Dimensions
-            length = float(input("   Length (inches): ").strip())
-            width = float(input("   Width (inches): ").strip())
-            height = float(input("   Height (inches): ").strip())
+            # Dimensions in cm (not inches)
+            length = float(input("   Length (cm): ").strip())
+            width = float(input("   Width (cm): ").strip())
+            height = float(input("   Height (cm): ").strip())
             
-            # ZIP codes
-            origin = input("   Origin ZIP code: ").strip()
-            destination = input("   Destination ZIP code: ").strip()
+            # Indian pincodes (6 digits)
+            origin = input("   Origin Pincode (6 digits): ").strip()
+            destination = input("   Destination Pincode (6 digits): ").strip()
             
-            # Optional declared value
+            # Optional declared value in INR
             declared_input = input("   Declared value (optional, press Enter to skip): ").strip()
             declared_value = float(declared_input) if declared_input else None
             
             return ShipmentPackage(
-                weight_lbs=weight,
-                length_in=length,
-                width_in=width,
-                height_in=height,
-                origin_zip=origin,
-                destination_zip=destination,
+                weight_kg=weight,
+                length_cm=length,
+                width_cm=width,
+                height_cm=height,
+                origin_pincode=origin,
+                destination_pincode=destination,
                 declared_value=declared_value
             )
             
@@ -76,8 +76,8 @@ class ShippingRateComparator:
             self.display.print_package_details(package)
             
             # Run comparison
-            self.display.print_subheader("Fetching Rates from Carriers")
-            print("   This may take a few seconds...\n")
+            self.display.print_subheader("Fetching Rates from Indian Carriers")
+            print("   Comparing DTDC, Blue Dart, Delhivery, India Post...\n")
             
             result = await self.orchestrator.compare_rates(package)
             
@@ -93,7 +93,7 @@ class ShippingRateComparator:
                 self.display.print_success(f"Found {len(result.rates)} shipping options")
             else:
                 self.display.print_error("No rates could be retrieved")
-                self.display.print_warning("Please check your package details and try again")
+                self.display.print_warning("Please check your pincodes and try again")
             
         except Exception as e:
             self.logger.error(f"Error: {str(e)}")
@@ -110,11 +110,11 @@ async def main():
         print("\n" + "=" * 70)
         again = input("🔄 Compare another shipment? (y/n): ").strip().lower()
         if again != 'y':
-            print(f"\n{Fore.GREEN}Thank you for using Shipment Rate Comparator!{Style.RESET_ALL}")
+            print(f"\n{Fore.GREEN}Dhanyavaad! Thank you for using Shipment Rate Comparator!{Style.RESET_ALL}")
             break
 
 if __name__ == "__main__":
-    try:    
+    try:
         asyncio.run(main())
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}👋 Goodbye!{Style.RESET_ALL}")
