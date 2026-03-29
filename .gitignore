@@ -11,7 +11,7 @@ ENV/
 
 # Environment variables
 .env
-apikey.env
+*.env
 
 # IDE
 .vscode/
@@ -25,9 +25,9 @@ apikey.env
 debug.log
 
 # Test files
-tests/
 test_*.py
 *_test.py
+tests/
 
 # Distribution
 dist/
@@ -40,3 +40,6 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# ZIP files
+*.zip

@@ -1,4 +1,4 @@
-"""Main application for shipment rate comparator - Indian Edition"""
+"""Main application for shipment rate comparator"""
 
 import asyncio
 import sys
@@ -23,34 +23,34 @@ class ShippingRateComparator:
     
     def get_user_input(self) -> Optional[ShipmentPackage]:
         """Get shipment details from user"""
-        self.display.print_header("🚚 SHIPMENT RATE COMPARATOR - INDIA EDITION 🚚")
+        self.display.print_header("🚚 SHIPMENT RATE COMPARATOR 🚚")
         
         try:
             print("\n📦 Enter package details:\n")
             
-            # Weight in kg
-            weight = float(input("   Weight (kg): ").strip())
+            # Weight
+            weight = float(input("   Weight (lbs): ").strip())
             
-            # Dimensions in cm
-            length = float(input("   Length (cm): ").strip())
-            width = float(input("   Width (cm): ").strip())
-            height = float(input("   Height (cm): ").strip())
+            # Dimensions
+            length = float(input("   Length (inches): ").strip())
+            width = float(input("   Width (inches): ").strip())
+            height = float(input("   Height (inches): ").strip())
             
-            # Indian pincodes (6 digits)
-            origin = input("   Origin Pincode (6 digits): ").strip()
-            destination = input("   Destination Pincode (6 digits): ").strip()
+            # ZIP codes
+            origin = input("   Origin ZIP code: ").strip()
+            destination = input("   Destination ZIP code: ").strip()
             
-            # Optional declared value in INR
+            # Optional declared value
             declared_input = input("   Declared value (optional, press Enter to skip): ").strip()
             declared_value = float(declared_input) if declared_input else None
             
             return ShipmentPackage(
-                weight_kg=weight,
-                length_cm=length,
-                width_cm=width,
-                height_cm=height,
-                origin_pincode=origin,
-                destination_pincode=destination,
+                weight_lbs=weight,
+                length_in=length,
+                width_in=width,
+                height_in=height,
+                origin_zip=origin,
+                destination_zip=destination,
                 declared_value=declared_value
             )
             
@@ -77,7 +77,7 @@ class ShippingRateComparator:
             
             # Run comparison
             self.display.print_subheader("Fetching Rates from Carriers")
-            print("   Comparing DTDC, Blue Dart, Delhivery, India Post...\n")
+            print("   This may take a few seconds...\n")
             
             result = await self.orchestrator.compare_rates(package)
             
@@ -93,7 +93,7 @@ class ShippingRateComparator:
                 self.display.print_success(f"Found {len(result.rates)} shipping options")
             else:
                 self.display.print_error("No rates could be retrieved")
-                self.display.print_warning("Please check your pincodes and try again")
+                self.display.print_warning("Please check your package details and try again")
             
         except Exception as e:
             self.logger.error(f"Error: {str(e)}")
@@ -110,11 +110,11 @@ async def main():
         print("\n" + "=" * 70)
         again = input("🔄 Compare another shipment? (y/n): ").strip().lower()
         if again != 'y':
-            print(f"\n{Fore.GREEN}Dhanyavaad! Thank you for using Shipment Rate Comparator!{Style.RESET_ALL}")
+            print(f"\n{Fore.GREEN}Thank you for using Shipment Rate Comparator!{Style.RESET_ALL}")
             break
 
 if __name__ == "__main__":
-    try:
+    try:    
         asyncio.run(main())
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}👋 Goodbye!{Style.RESET_ALL}")
